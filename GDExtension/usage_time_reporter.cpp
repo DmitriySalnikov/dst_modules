@@ -5,7 +5,7 @@
 #ifdef DEV_ENABLED
 // #define USE_DEV_SERVER
 // #define TEST_FILES_CONTENT
-#define PRINT_REQUEST_DATA
+// #define PRINT_REQUEST_DATA
 #endif
 
 #define DST_PRINT_APP_NAME app_name
@@ -14,10 +14,10 @@ DST_GODOT_WARNING_DISABLE()
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/json.hpp>
+#include <godot_cpp/classes/marshalls.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/resource.hpp>
-#include <godot_cpp/classes/marshalls.hpp>
 #include <godot_cpp/classes/time.hpp>
 DST_GODOT_WARNING_RESTORE()
 using namespace godot;
@@ -461,17 +461,16 @@ UsageTimeReporter::RequestResult UsageTimeReporter::_request_body(Ref<HTTPClient
 	return RequestResult(HTTPClient::ResponseCode::RESPONSE_NO_CONTENT, "", Dictionary(), data.url, data.headers, data.body);
 }
 
-UsageTimeReporter::UsageTimeReporter(String app_name, String app_id, String library_version, String root_settings, String host_url, String config_file_name) {
-	library_version = library_version;
-
+UsageTimeReporter::UsageTimeReporter(String p_app_name, String p_app_id, String p_library_version, String p_root_settings, String p_host_url, String p_config_file_name) {
 	String base_config_path = OS::get_singleton()->get_config_dir().path_join("DmitriySalnikov");
 	user_uid_file = base_config_path.path_join("telemetry_uid.txt");
 
 	user_info_file_dd3d_old = base_config_path.path_join("telemetry_info.json");
 
-	this->app_id = app_id;
-	this->app_name = app_name;
-	this->user_info_file = base_config_path.path_join(config_file_name);
+	app_name = p_app_name;
+	app_id = p_app_id;
+	library_version = p_library_version;
+	user_info_file = base_config_path.path_join(p_config_file_name);
 
 	FILE_KEY = Marshalls::get_singleton()->base64_to_raw(TELEMETRY_DST_FILE_KEY);
 
@@ -480,7 +479,7 @@ UsageTimeReporter::UsageTimeReporter(String app_name, String app_id, String libr
 	telemetry_domain = "https://localhost";
 #else
 	// https://example.com
-	telemetry_domain = host_url;
+	telemetry_domain = p_host_url;
 #endif
 
 	start_address = "/submit/start";
@@ -492,7 +491,7 @@ UsageTimeReporter::UsageTimeReporter(String app_name, String app_id, String libr
 
 	default_request_headers = PackedStringArray(Array::make(accept_type_header, api_version_header, body_type_header));
 
-	s_root_addon_setting = root_settings;
+	s_root_addon_setting = p_root_settings;
 	s_telemetry_setting = "telemetry_state";
 
 #ifdef DEV_ENABLED
@@ -501,7 +500,10 @@ UsageTimeReporter::UsageTimeReporter(String app_name, String app_id, String libr
 		bool has_editor_interface_singleton = (((int)version["major"]) >= 4 && ((int)version["minor"]) >= 2);
 		Object *ts = Engine::get_singleton()->get_singleton("TranslationServer");
 
-		String basis_str = DST_FMT_STR("\tOS id: {0}\n\tOS version: {1}\n\tOS name: {2}\n\tEngine version: {3}\n\tArch id: {4}\n\tArch name: {5}\n\tLocale: {6}\n\tUser info: {7}\n\tEditorInterface object: {8}\n\tTranslationServer object: {9}\n\tEditor language: {10}\n",
+		String lib_str = DST_FMT_STR("\tApp name: {0}\n\tLib version: {1}", app_name, library_version);
+		DST_DEV_PRINT_STD("Libarary info: \n%s", lib_str.utf8());
+
+		String sys_str = DST_FMT_STR("\tOS id: {0}\n\tOS version: {1}\n\tOS name: {2}\n\tEngine version: {3}\n\tArch id: {4}\n\tArch name: {5}\n\tLocale: {6}\n\tUser info: {7}\n\tEditorInterface object: {8}\n\tTranslationServer object: {9}\n\tEditor language: {10}\n",
 				(int)get_os(),
 				get_os_version(),
 				OS::get_singleton()->get_name(),
@@ -513,7 +515,7 @@ UsageTimeReporter::UsageTimeReporter(String app_name, String app_id, String libr
 				has_editor_interface_singleton ? Engine::get_singleton()->get_singleton("EditorInterface") : nullptr,
 				Engine::get_singleton()->get_singleton("TranslationServer"),
 				ts ? ts->call("get_tool_locale") : "TranslationServer not found");
-		DST_DEV_PRINT_STD("System and Engine info: \n%s", basis_str.utf8());
+		DST_DEV_PRINT_STD("System and Engine info: \n%s", sys_str.utf8());
 	}
 #endif
 
@@ -643,10 +645,6 @@ void UsageTimeReporter::save_data_on_closing() {
 	}
 }
 
-void UsageTimeReporterGodotObj::_bind_methods() {
-	ClassDB::bind_method(D_METHOD(DST_NAMEOF(_deferred_call)), &UsageTimeReporterGodotObj::_deferred_call);
-}
-
 void UsageTimeReporterGodotObj::_deferred_call() {
 	// disable by default for headless
 	if (Engine::get_singleton()->is_editor_hint()) {
@@ -667,7 +665,7 @@ UsageTimeReporterGodotObj::UsageTimeReporterGodotObj(String app_name, String app
 		root_settings(root_settings),
 		host_url(host_url),
 		config_file_name(config_file_name) {
-	call_deferred(DST_NAMEOF(_deferred_call));
+	callable_mp(this, &UsageTimeReporterGodotObj::_deferred_call).call_deferred();
 }
 
 #endif

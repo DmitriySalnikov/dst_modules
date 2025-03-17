@@ -201,7 +201,7 @@ private:
 		RequestData(const String &p_url, const String &p_body, const PackedStringArray &p_headers) :
 				url(p_url),
 				body(p_body),
-				headers(p_headers) {};
+				headers(p_headers) {}
 	};
 
 	struct RequestResult {
@@ -233,7 +233,7 @@ private:
 		String region;
 		LangRegion(const String &p_lang, const String &p_region) :
 				lang(p_lang),
-				region(p_region) {};
+				region(p_region) {}
 	};
 
 	std::jthread http_thread;
@@ -286,7 +286,7 @@ private:
 	RequestResult _request_body(Ref<HTTPClient> http, const RequestData &data, std::stop_token &token);
 
 public:
-	UsageTimeReporter(String app_name, String app_id, String library_version, String root_settings, String host_url, String config_file_name);
+	UsageTimeReporter(String p_app_name, String p_app_id, String p_library_version, String p_root_settings, String p_host_url, String p_config_file_name);
 	~UsageTimeReporter();
 };
 
@@ -304,11 +304,11 @@ class UsageTimeReporterGodotObj : public Object {
 	String config_file_name;
 
 protected:
-	static void _bind_methods();
+	static void _bind_methods() {}
 	void _deferred_call();
 
 public:
-	UsageTimeReporterGodotObj() {};
+	UsageTimeReporterGodotObj() {}
 	UsageTimeReporterGodotObj(String app_name, String app_id, String library_version, String root_settings, String host_url, String config_file_name);
 };
 #undef GDCLASS_CUSTOM
@@ -316,7 +316,7 @@ public:
 #define DEFINE_TELEMETRY_OBJECT_ID(obj_id_name) uint64_t obj_id_name = 0
 #define INIT_EDITOR_TELEMETRY_OBJECT(obj_id_name, app_name, app_id, library_version, root_settings, host_url, config_file_name)                                      \
 	if (Engine::get_singleton()->is_editor_hint()) {                                                                                                                 \
-		ClassDB::register_class<UsageTimeReporterGodotObj>();                                                                                                        \
+		ClassDB::register_internal_class<UsageTimeReporterGodotObj>();                                                                                               \
 		UsageTimeReporterGodotObj *usage_reporter = memnew(UsageTimeReporterGodotObj(app_name, app_id, library_version, root_settings, host_url, config_file_name)); \
 		obj_id_name = usage_reporter->get_instance_id();                                                                                                             \
 	}
